@@ -5,25 +5,19 @@
 
 #define SIZE 100000
 
-// ─────────────────────────────────────────
 //  Utility: fill array with random values
-// ─────────────────────────────────────────
 void fill_random(int *arr, int n) {
     srand(42); // fixed seed → reproducible
     for (int i = 0; i < n; i++)
         arr[i] = rand() % 1000000;
 }
 
-// ─────────────────────────────────────────
 //  Utility: copy array
-// ─────────────────────────────────────────
 void copy_array(int *dst, const int *src, int n) {
     memcpy(dst, src, n * sizeof(int));
 }
 
-// ─────────────────────────────────────────
 //  Utility: print first/last few elements
-// ─────────────────────────────────────────
 void print_preview(const char *label, int *arr, int n) {
     printf("%s (first 8): ", label);
     for (int i = 0; i < 8 && i < n; i++) printf("%d ", arr[i]);
@@ -32,25 +26,19 @@ void print_preview(const char *label, int *arr, int n) {
     printf("\n");
 }
 
-// ─────────────────────────────────────────
 //  Comparator for qsort / stdlib
-// ─────────────────────────────────────────
 int cmp(const void *a, const void *b) {
     return (*(int *)a - *(int *)b);
 }
 
-// ─────────────────────────────────────────
 //  SERIAL: simple quicksort via stdlib
-// ─────────────────────────────────────────
 void serial_sort(int *arr, int n) {
     qsort(arr, n, sizeof(int), cmp);
 }
 
-// ─────────────────────────────────────────
-//  PARALLEL: parallel merge sort with OpenMP
+//  PARALLEL: parallel merge sort
 //  Each thread sorts its own chunk, then
-//  chunks are merged sequentially.
-// ─────────────────────────────────────────
+//  chunks are merged sequentially
 
 // Merge two sorted halves in-place using a temp buffer
 void merge(int *arr, int left, int mid, int right) {
@@ -70,10 +58,10 @@ void merge(int *arr, int left, int mid, int right) {
 void parallel_sort(int *arr, int n) {
     int num_threads = omp_get_max_threads();
 
-    // Divide array into chunks — one per thread
+    // Divide array into chunks, one per thread
     int chunk = n / num_threads;
 
-    // ── Step 1: each thread sorts its own chunk ──
+    // Step 1: each thread sorts its own chunk
     #pragma omp parallel for schedule(static)
     for (int t = 0; t < num_threads; t++) {
         int start = t * chunk;
@@ -81,7 +69,7 @@ void parallel_sort(int *arr, int n) {
         qsort(arr + start, end - start, sizeof(int), cmp);
     }
 
-    // ── Step 2: merge sorted chunks (sequential merge tree) ──
+    // Step 2: merge sorted chunks (sequential merge tree)
     int width = chunk;
     while (width < n) {
         for (int left = 0; left < n - width; left += 2 * width) {
@@ -94,9 +82,6 @@ void parallel_sort(int *arr, int n) {
     }
 }
 
-// ─────────────────────────────────────────
-//  MAIN
-// ─────────────────────────────────────────
 int main() {
     int *original = (int *)malloc(SIZE * sizeof(int));
     int *serial   = (int *)malloc(SIZE * sizeof(int));
@@ -114,7 +99,7 @@ int main() {
     print_preview("Unsorted", original, SIZE);
     printf("-------------------------------------------\n");
 
-    // ── Serial sort ──
+    // Serial sort
     double t1 = omp_get_wtime();
     serial_sort(serial, SIZE);
     double t2 = omp_get_wtime();
@@ -123,7 +108,7 @@ int main() {
     printf("  Serial   time : %.9f seconds\n", t2 - t1);
     printf("-------------------------------------------\n");
 
-    // ── Parallel sort ──
+    // Parallel sort
     double t3 = omp_get_wtime();
     parallel_sort(parallel, SIZE);
     double t4 = omp_get_wtime();
